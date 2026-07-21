@@ -99,18 +99,49 @@ def draw_timeline(img, sample: StaSample, current_frame: int):
         cv2.putText(img, txt, (x0, y0 - 8 - i * 18), cv2.FONT_HERSHEY_SIMPLEX, 0.45, color, 1, cv2.LINE_AA)
 
 
+ANN_BOX_COLOR = (0, 220, 255)  # same yellow/cyan as anticipation timeline marker
+
+
+def box_to_display_pixels(
+    box: tuple[float, float, float, float],
+    sample: StaSample,
+    display_w: int,
+    display_h: int,
+) -> tuple[int, int, int, int]:
+    x1, y1, x2, y2 = box
+    src_w, src_h = sample.frame_width, sample.frame_height
+    if max(x1, x2) <= 1.0 and max(y1, y2) <= 1.0:
+        x1, x2 = x1 * src_w, x2 * src_w
+        y1, y2 = y1 * src_h, y2 * src_h
+    sx = display_w / src_w
+    sy = display_h / src_h
+    return (
+        int(round(x1 * sx)),
+        int(round(y1 * sy)),
+        int(round(x2 * sx)),
+        int(round(y2 * sy)),
+    )
+
+
 def draw_gt_boxes(img, sample: StaSample, current_frame: int):
+    """Draw annotation boxes when viewing the STA anticipation (annotation) frame."""
     if current_frame != sample.annotation_frame:
         return
     h, w = img.shape[:2]
-    for obj in sample.objects:
-        x1, y1, x2, y2 = obj.box
-        if max(x1, x2) <= 1.0 and max(y1, y2) <= 1.0:
-            x1, x2 = x1 * w, x2 * w
-            y1, y2 = y1 * h, y2 * h
-        p1 = (int(x1), int(y1))
-        p2 = (int(x2), int(y2))
-        cv2.rectangle(img, p1, p2, (0, 255, 120), 2)
+    for i, obj in enumerate(sample.objects):
+        x1, y1, x2, y2 = box_to_display_pixels(obj.box, sample, w, h)
+        cv2.rectangle(img, (x1, y1), (x2, y2), ANN_BOX_COLOR, 2)
+        label = f"{obj.verb_name}+{obj.noun_name}"[:40]
+        cv2.putText(
+            img,
+            label,
+            (x1, max(y1 - 6, 16)),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.5,
+            ANN_BOX_COLOR,
+            2,
+            cv2.LINE_AA,
+        )
 
 
 def annotate_frame(

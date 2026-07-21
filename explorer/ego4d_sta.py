@@ -36,6 +36,8 @@ class StaSample:
     objects: list[StaObject]
     playback_frames: list[int]
     mp4: Path
+    frame_width: int
+    frame_height: int
 
 
 def _split_annotation_files(data_root: Path, split: str) -> list[Path]:
@@ -150,6 +152,8 @@ def build_sta_samples(
                 objects=objs,
                 playback_frames=playback,
                 mp4=mp4,
+                frame_width=int(meta["frame_width"]),
+                frame_height=int(meta["frame_height"]),
             )
         )
 
